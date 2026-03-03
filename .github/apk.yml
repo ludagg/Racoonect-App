@@ -1,1 +1,43 @@
-/
+name: Build Expo Android App
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      EXPO_TOKEN: i30UAzsRswbOFNjO31JnT1WDOJydqgLl2ftdS55E
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      - name: 🚀 Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: 🏗 Build Android app with EAS
+        run: eas build --platform android --non-interactive --profile preview
+
+      - name: 📤 Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: |
+            **/*.apk
+            **/*.aab
+          if-no-files-found: ignore
