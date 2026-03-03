@@ -1,0 +1,45 @@
+name: Build Expo Android App
+
+on:
+  push:
+    branches:
+      - master   # 🔥 À CHAQUE COMMIT sur master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      EXPO_TOKEN: i30UAzsRswbOFNjO31JnT1WDOJydqgLl2ftdS55E
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      - name: 🚀 Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: 🏗 Start EAS Android build
+        run: |
+          eas build \
+            --platform android \
+            --profile preview \
+            --non-interactive \
+            --json \
+            > build.json
+
+      - name: 🔗 Show APK download link
+        run: |
+          echo "📦 Build finished"
+          echo "🔗 APK download URL:"
+          cat build.json | jq -r '.[0].artifacts.buildUrl'
