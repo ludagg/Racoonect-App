@@ -3,8 +3,6 @@ name: Build Expo Android App
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -30,14 +28,19 @@ jobs:
       - name: 🚀 Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: 🏗 Build Android app with EAS
-        run: eas build --platform android --non-interactive --profile preview
+      - name: 🏗 Start EAS Android build
+        run: |
+          eas build \
+            --platform android \
+            --profile preview \
+            --non-interactive \
+            --json \
+            > build.json
 
-      - name: 📤 Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-build
-          path: |
-            **/*.apk
-            **/*.aab
-          if-no-files-found: ignore
+      - name: 🔗 Show APK download link
+        run: |
+          echo "📦 Build result:"
+          cat build.json
+          echo ""
+          echo "🔗 APK download URL:"
+          cat build.json | jq -r '.[0].artifacts.buildUrl'
