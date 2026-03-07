@@ -13,6 +13,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { supabase } from '../../lib/supabase';
 
 // ── 8 icônes de l'app, 4 visibles à la fois ───────────────────
 const APP_ICONS = [
@@ -33,6 +34,7 @@ export default function LoginScreen() {
   const [name,        setName]         = useState('');
   const [email,       setEmail]        = useState('');
   const [error,       setError]        = useState('');
+  const [loading,     setLoading]      = useState(false);
   const [iconOffset,  setIconOffset]   = useState(0);
 
   // Animations d'entrée
@@ -98,26 +100,65 @@ export default function LoginScreen() {
   });
 
   // ── Logique login ──────────────────────────────────────────
-  function handlePhoneNext() {
+  async function handlePhoneNext() {
     setError('');
     if (phone.trim() === '') { setError('Entrez votre numéro de téléphone.'); return; }
-    if (phone.trim() !== '0600000000') { setError('Numéro introuvable. (Test: 0600000000)'); return; }
-    setCurrentView('phone_step2');
+
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      phone: phone.trim(),
+    });
+    setLoading(false);
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setCurrentView('phone_step2');
+    }
   }
 
-  function handleOtpConfirm() {
+  async function handleOtpConfirm() {
     setError('');
     if (otp.trim() === '') { setError('Entrez le code OTP.'); return; }
-    if (otp.trim() !== '1234') { setError('Code incorrect. (Test: 1234)'); return; }
-    router.replace('/(tabs)');
+
+    setLoading(true);
+    const { error } = await supabase.auth.verifyOtp({
+      phone: phone.trim(),
+      token: otp.trim(),
+      type: 'sms',
+    });
+    setLoading(false);
+
+    if (error) {
+      setError(error.message);
+    } else {
+      router.replace('/(tabs)');
+    }
   }
 
-  function handleSignupSubmit() {
+  async function handleSignupSubmit() {
     setError('');
-    if (!name.trim() || !email.trim()) { setError('Remplissez tous les champs.'); return; }
-    setError('');
-    // Ici on connectera Supabase — pour l'instant message de succès
-    setCurrentView('main');
+    if (!name.trim() || !email.trim() || !phone.trim()) { setError('Remplissez tous les champs.'); return; }
+
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password: Math.random().toString(36).slice(-10), // Mot de passe aléatoire car on utilise le téléphone principalement
+      options: {
+        data: {
+          full_name: name.trim(),
+          phone: phone.trim(),
+        }
+      }
+    });
+    setLoading(false);
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setError('Inscription réussie ! Vous pouvez maintenant vous connecter.');
+      setCurrentView('main');
+    }
   }
 
   function goBack() {
@@ -209,7 +250,7 @@ export default function LoginScreen() {
 
               <Animated.View style={fadeSlide(linkAnim)}>
                 <Text style={styles.signupText}>
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <Text style={styles.signupLink} onPress={() => { setError(''); setCurrentView('signup'); }}>
                     Sign Up
                   </Text>
@@ -226,7 +267,7 @@ export default function LoginScreen() {
 
               <TextInput
                 style={styles.input}
-                placeholder="Ex : 0600000000"
+                placeholder="Ex : +33600000000"
                 placeholderTextColor="#aaa"
                 keyboardType="phone-pad"
                 value={phone}
@@ -236,8 +277,13 @@ export default function LoginScreen() {
 
               {error !== '' && <Text style={styles.errorText}>{error}</Text>}
 
-              <TouchableOpacity style={styles.btnPrimary} onPress={handlePhoneNext} activeOpacity={0.85}>
-                <Text style={styles.btnLabelCenter}>Envoyer le code →</Text>
+              <TouchableOpacity
+                style={[styles.btnPrimary, loading && { opacity: 0.7 }]}
+                onPress={handlePhoneNext}
+                activeOpacity={0.85}
+                disabled={loading}
+              >
+                <Text style={styles.btnLabelCenter}>{loading ? 'Envoi en cours...' : 'Envoyer le code →'}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={goBack} style={styles.backBtn}>
@@ -257,7 +303,7 @@ export default function LoginScreen() {
                 placeholder="- - - -"
                 placeholderTextColor="#aaa"
                 keyboardType="number-pad"
-                maxLength={4}
+                maxLength={6}
                 value={otp}
                 onChangeText={t => { setOtp(t); setError(''); }}
                 autoFocus
@@ -265,8 +311,13 @@ export default function LoginScreen() {
 
               {error !== '' && <Text style={styles.errorText}>{error}</Text>}
 
-              <TouchableOpacity style={styles.btnPrimary} onPress={handleOtpConfirm} activeOpacity={0.85}>
-                <Text style={styles.btnLabelCenter}>Confirmer →</Text>
+              <TouchableOpacity
+                style={[styles.btnPrimary, loading && { opacity: 0.7 }]}
+                onPress={handleOtpConfirm}
+                activeOpacity={0.85}
+                disabled={loading}
+              >
+                <Text style={styles.btnLabelCenter}>{loading ? 'Vérification...' : 'Confirmer →'}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => setCurrentView('phone_step1')} style={styles.backBtn}>
@@ -300,7 +351,7 @@ export default function LoginScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Votre téléphone"
+                placeholder="Votre téléphone (Ex : +33600000000)"
                 placeholderTextColor="#aaa"
                 keyboardType="phone-pad"
                 value={phone}
@@ -309,8 +360,13 @@ export default function LoginScreen() {
 
               {error !== '' && <Text style={styles.errorText}>{error}</Text>}
 
-              <TouchableOpacity style={styles.btnPrimary} onPress={handleSignupSubmit} activeOpacity={0.85}>
-                <Text style={styles.btnLabelCenter}>Créer mon compte →</Text>
+              <TouchableOpacity
+                style={[styles.btnPrimary, loading && { opacity: 0.7 }]}
+                onPress={handleSignupSubmit}
+                activeOpacity={0.85}
+                disabled={loading}
+              >
+                <Text style={styles.btnLabelCenter}>{loading ? 'Inscription...' : 'Créer mon compte →'}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={goBack} style={styles.backBtn}>
