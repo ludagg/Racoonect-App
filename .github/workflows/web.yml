@@ -3,7 +3,7 @@ name: Deploy Expo Web
 on:
   push:
     branches:
-      - main
+      - master
 
 permissions:
   contents: read
