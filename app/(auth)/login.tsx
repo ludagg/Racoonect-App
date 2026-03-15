@@ -23,6 +23,7 @@ function redirectByRole(role: Role) {
     case 'fournisseur':   router.replace('/(tabs)/fournisseur');   break;
     case 'gestionnaire':  router.replace('/(tabs)/gestionnaire');  break;
     case 'agriculteur':   router.replace('/(tabs)/agriculteur');   break;
+    case 'chauffeur':     router.replace('/(tabs)/chauffeur');     break;
     default:              router.replace('/(tabs)/fournisseur');   break;
   }
 }
@@ -189,6 +190,7 @@ export default function LoginScreen() {
     { key: 'fournisseur',  label: 'Fournisseur',  emoji: '🚜' },
     { key: 'agriculteur',  label: 'Agriculteur',  emoji: '🌾' },
     { key: 'gestionnaire', label: 'Gestionnaire', emoji: '📊' },
+    { key: 'chauffeur',    label: 'Chauffeur',    emoji: '🚚' },
   ];
 
   return (
@@ -226,7 +228,7 @@ export default function LoginScreen() {
             Des déchets agricoles vers le biogaz et le fertilisant naturel
           </Animated.Text>
           <Animated.View style={[styles.teamBadge, fadeSlide(subtitleAnim)]}>
-            <Text style={styles.teamText}>🦝 L'équipe des Racoons · Maroc & Afrique</Text>
+            <Text style={styles.teamText}>🦝 L&apos;équipe des Racoons · Maroc & Afrique</Text>
           </Animated.View>
 
           {/* ══ VUE PRINCIPALE ══════════════════════════════ */}
