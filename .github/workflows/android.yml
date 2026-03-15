@@ -40,14 +40,44 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Build APK Debug
+      # Génère un keystore temporaire à la volée — aucun secret nécessaire
+      - name: Generate ephemeral keystore
+        run: |
+          keytool -genkeypair \
+            -v \
+            -keystore android/app/release.keystore \
+            -alias release \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 1 \
+            -storepass temppassword \
+            -keypass temppassword \
+            -dname "CN=CI, OU=CI, O=CI, L=CI, S=CI, C=FR"
+
+      # Injecte la config de signature dans gradle
+      - name: Configure signing
+        run: |
+          cat >> android/app/build.gradle << 'EOF'
+
+          android.signingConfigs {
+            release {
+              storeFile file("release.keystore")
+              storePassword "temppassword"
+              keyAlias "release"
+              keyPassword "temppassword"
+            }
+          }
+          android.buildTypes.release.signingConfig = android.signingConfigs.release
+          EOF
+
+      - name: Build APK Release
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: app-release
+          path: android/app/build/outputs/apk/release/*.apk
           retention-days: 7
