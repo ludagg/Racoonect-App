@@ -47,3 +47,11 @@
     }
   }
 }
+
+{
+  "expo": {
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
